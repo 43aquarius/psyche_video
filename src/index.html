@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>心理熵 Psychic Entropy — 快节奏版</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1920px; height:1080px; overflow:hidden; background:#0B0D17;
+    font-family:'Noto Sans SC','Source Han Sans SC',sans-serif; color:#F5F6FA;
+    -webkit-font-smoothing:antialiased; }
+
+  /* ===== 全局舞台 ===== */
+  #stage { position:absolute; inset:0; width:1920px; height:1080px; }
+  #bgGrid { position:absolute; inset:0; opacity:.05;
+    background-image:linear-gradient(#4FA3F1 1px,transparent 1px),linear-gradient(90deg,#4FA3F1 1px,transparent 1px);
+    background-size:96px 96px; }
+  #bgGlow { position:absolute; inset:0;
+    background:radial-gradient(ellipse 900px 600px at 50% 42%,rgba(79,163,241,.10),transparent 65%),
+               radial-gradient(ellipse 700px 500px at 80% 85%,rgba(242,201,76,.06),transparent 60%); }
+  #vignette { position:absolute; inset:0; background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%); }
+  #noise { position:absolute; inset:0; opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  /* ===== 场景容器 ===== */
+  .scene { position:absolute; inset:0; display:none; }
+  .scene.on { display:block; }
+
+  /* ===== 通用元素 ===== */
+  .glitch { font-weight:900; color:#fff; letter-spacing:.02em;
+    text-shadow:7px 3px 0 rgba(255,70,85,.85), -7px -3px 0 rgba(79,163,241,.85); }
+  .glitchHard { font-weight:900; color:#fff;
+    text-shadow:11px 5px 0 rgba(255,70,85,.95), -11px -5px 0 rgba(79,163,241,.95), 0 0 34px rgba(79,163,241,.35); }
+  .enTag { font-family:'Georgia','Times New Roman',serif; font-style:italic; font-weight:400;
+    color:#4FA3F1; letter-spacing:.14em; }
+  .kicker { display:inline-block; font-size:26px; font-weight:700; letter-spacing:.5em; text-indent:.5em;
+    color:#F2C94C; text-transform:uppercase; }
+  .numBadge { position:absolute; top:64px; right:88px; font-size:26px; font-weight:800; color:rgba(245,246,250,.28);
+    letter-spacing:.18em; }
+  .secLabel { position:absolute; top:64px; left:88px; display:flex; align-items:center; gap:16px; }
+  .secLabel .dot { width:14px; height:14px; border-radius:50%; background:#6BCB77; box-shadow:0 0 18px #6BCB77; }
+  .secLabel .txt { font-size:24px; font-weight:700; letter-spacing:.34em; color:rgba(245,246,250,.45); text-transform:uppercase; }
+  .hr { height:4px; border-radius:2px; background:linear-gradient(90deg,#6BCB77,#F2C94C 55%,#FF6B6B); }
+
+  .pop { opacity:0; transform:translateY(46px) scale(.96); }
+  .slideL { opacity:0; transform:translateX(-70px); }
+  .slideR { opacity:0; transform:translateX(70px); }
+  .zoomIn { opacity:0; transform:scale(.55); }
+  .wipeShow { clip-path:inset(0 100% 0 0); }
+
+  .cardBox { background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.10);
+    border-radius:26px; backdrop-filter:blur(6px); }
+  .chip { display:inline-flex; align-items:center; gap:12px; padding:12px 28px; border-radius:999px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); font-weight:700; }
+  .chip .cd { width:12px; height:12px; border-radius:50%; }
+
+  /* ===== 底部胶囊进度条 ===== */
+  #progressWrap { position:absolute; left:120px; right:120px; bottom:52px; height:14px;
+    border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); overflow:hidden; }
+  #progressFill { position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:linear-gradient(90deg,#6BCB77 0%,#F2C94C 55%,#FF6B6B 100%);
+    background-size:14700px 100%; box-shadow:0 0 22px rgba(242,201,76,.45); }
+  #progressPct { position:absolute; bottom:84px; right:120px; font-size:26px; font-weight:800; color:#F2C94C;
+    letter-spacing:.08em; font-variant-numeric:tabular-nums; }
+  #progressPct .u { color:rgba(245,246,250,.5); font-size:20px; margin-left:4px; }
+
+  /* ===== 手机 UI ===== */
+  .phone { position:absolute; background:#111420; border:3px solid rgba(255,255,255,.16);
+    border-radius:44px; box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 1px rgba(79,163,241,.08); overflow:hidden; }
+  .phone .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:190px; height:26px;
+    background:#0B0D17; border-radius:0 0 16px 16px; }
+  .phone .statusbar { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 30px;
+    font-size:16px; color:rgba(255,255,255,.55); font-weight:600; }
+  .todoItem { display:flex; align-items:center; gap:16px; margin:0 26px 14px; height:64px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:16px;
+    padding:0 20px; font-size:22px; font-weight:600; color:rgba(245,246,250,.85); }
+  .todoItem .cb { width:26px; height:26px; border-radius:8px; border:2px solid rgba(255,255,255,.35); flex:none; }
+  .todoItem.done .cb { background:#6BCB77; border-color:#6BCB77; position:relative; }
+  .todoItem.done .cb::after { content:''; position:absolute; left:8px; top:4px; width:7px; height:13px;
+    border:solid #0B0D17; border-width:0 3px 3px 0; transform:rotate(43deg); }
+  .todoItem.done span { text-decoration:line-through; color:rgba(245,246,250,.35); }
+  .appTitle { padding:18px 30px 10px; font-size:28px; font-weight:800; }
+
+  /* ===== 粒子 ===== */
+  .pt { position:absolute; border-radius:50%; }
+
+  /* ===== 心流通道图 ===== */
+  .flowAxes { position:absolute; border-left:4px solid rgba(255,255,255,.30); border-bottom:4px solid rgba(255,255,255,.30); }
+  .flowCurve { position:absolute; border-radius:50%; border:3px dashed #6BCB77; }
+  .flowZone { position:absolute; font-size:26px; font-weight:800; }
+
+  /* ===== 打字光标 ===== */
+  .caret::after { content:'▌'; color:#F2C94C; margin-left:6px; }
+
+  /* ===== 滚动 marquee ===== */
+  .marqWrap { position:absolute; left:0; right:0; overflow:hidden; }
+  .marqInner { position:absolute; white-space:nowrap; display:flex; gap:44px; align-items:center; }
+
+  /* ===== 便签 ===== */
+  .sticky { position:absolute; padding:20px 26px; font-weight:800; border-radius:8px;
+    box-shadow:0 16px 34px rgba(0,0,0,.45); transform:rotate(-3deg); }
+
+  /* ===== 结尾 logo ===== */
+  .endLogo { display:flex; align-items:center; gap:30px; }
+  .endLogo .ring { width:120px; height:120px; border-radius:50%; border:5px solid #F2C94C; position:relative; }
+  .endLogo .ring::before { content:''; position:absolute; inset:14px; border-radius:50%; border:4px solid #4FA3F1; }
+  .endLogo .ring::after { content:'ψ'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:52px; font-weight:900; color:#F5F6FA; font-family:Georgia,serif; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bgGrid"></div>
+  <div id="bgGlow"></div>
+
+  <!-- 场景容器由 JS 注入 -->
+
+  <div id="noise"></div>
+  <div id="vignette"></div>
+  <div id="progressWrap"><div id="progressFill"></div></div>
+  <div id="progressPct"><span id="pctNum">0</span><span class="u">%</span></div>
+</div>
+
+<script>
+/* ================= 工具函数 ================= */
+const $ = (s,p=document)=>p.querySelector(s);
+const $$ = (s,p=document)=>[...p.querySelectorAll(s)];
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+/* 0..1 进度：进入保持型 easeOutExpo（快进慢停，全程 0.25s 量级） */
+const eo = t=>{ t=clamp(t,0,1); return t>=1?1:1-Math.pow(2,-10*t); };
+const ei = t=>{ t=clamp(t,0,1); return t===0?0:t===1?1:Math.pow(2,10*(t-10)); };
+const easeInOut = t=>{ t=clamp(t,0,1); return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; };
+/* 带持续时间的归一化进入进度：t 秒 / dur 秒 → 0..1（eo 曲线） */
+const IN = (t,dur,delay=0)=>eo((t-delay)/Math.max(dur,.0001));
+const LIN = (t,dur,delay=0)=>clamp((t-delay)/Math.max(dur,.0001),0,1);
+/* 确定性伪随机（粒子用） */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }; }
+
+/* glitch 强度：场景头 0.4s 高强度 → 衰减为微抖 */
+function glitchAmp(t){ if(t<.38) return 1-(t/.38)*.75; return .25+.06*Math.sin(t*9.2); }
+
+/* 应用 glitch：el 为 .glitch/.glitchHard，t 场景内秒 */
+function applyGlitch(el,t){ const g=glitchAmp(t);
+  const a=(9+7*g), b=(4+3*g);
+  el.style.textShadow=`${(a*.9).toFixed(1)}px ${(b*.9).toFixed(1)}px 0 rgba(255,70,85,${.55+.4*g}), ${(-a*.9).toFixed(1)}px ${(-b*.9).toFixed(1)}px 0 rgba(79,163,241,${.55+.4*g}), 0 0 ${(30*g).toFixed(0)}px rgba(79,163,241,${.3*g})`;
+  el.style.transform = g>.7 ? `translate(${(Math.sin(t*47)*3*g).toFixed(1)}px,${(Math.cos(t*61)*2*g).toFixed(1)}px)` : 'none';
+}
+
+/* 数字滚动文本 */
+function fmtNum(v,dec=0){ return v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+/* 场景创建助手 */
+function mk(html){ const d=document.createElement('div'); d.className='scene'; d.innerHTML=html; $('#stage').insertBefore(d,$('#noise')); return d; }
+
+/* 布局常量 */
+const CX=960, CY=540;
+
+/* ================= 场景注册表 ================= */
+const SCENES=[]; // {el, t0, dur, render(t)}
+function reg(html,dur,renderFn){ const el=mk(html); el.classList.remove('on');
+  SCENES.push({el,dur,render:renderFn}); return el; }
+
+/* 入场动画快捷应用 */
+function popIn(el,t,delay=0,dur=.25,fromY=46){ const p=IN(t,dur,delay);
+  el.style.opacity=p; el.style.transform=`translateY(${lerp(fromY,0,p)}px) scale(${lerp(.96,1,p)})`; }
+function slideLIn(el,t,delay=0,dur=.25){ const p=IN(t,dur,delay);
+  el.style.opacity=p; el.style.transform=`translateX(${lerp(-70,0,p)}px)`; }
+function slideRIn(el,t,delay=0,dur=.25){ const p=IN(t,dur,delay);
+  el.style.opacity=p; el.style.transform=`translateX(${lerp(70,0,p)}px)`; }
+function zoomInEl(el,t,delay=0,dur=.3){ const p=IN(t,dur,delay);
+  el.style.opacity=p; el.style.transform=`scale(${lerp(.55,1,p)})`; }
+function wipeEl(el,t,delay=0,dur=.3){ const p=LIN(t,dur,delay);
+  el.style.clipPath=`inset(0 ${(100-p*100).toFixed(1)}% 0 0)`; }
+
+/* 粒子云初始化：返回 DOM 数组 */
+function seedParticles(container,n,opt){
+  const rnd=mulberry32(opt.seed||42); const els=[];
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div'); p.className='pt';
+    const size=lerp(opt.minR||3,opt.maxR||9,rnd());
+    p.style.width=size+'px'; p.style.height=size+'px';
+    p.style.background=opt.colors[i%opt.colors.length];
+    p.style.left=(rnd()*100)+'%'; p.style.top=(rnd()*100)+'%';
+    container.appendChild(p); els.push(p);
+  }
+  return els;
+}
+/* 布朗运动：确定性更新粒子位置（t 秒，speed 越大越乱） */
+function brownian(els,t,speed=1,seed=42){
+  const rnd=mulberry32(seed);
+  els.forEach((p,i)=>{
+    const ph1=rnd()*Math.PI*2, ph2=rnd()*Math.PI*2, f1=.4+rnd()*.8, f2=.4+rnd()*.8;
+    const x=50+Math.sin(t*f1*speed+ph1)*38*(1+speed*.12);
+    const y=50+Math.cos(t*f2*speed+ph2)*34*(1+speed*.12);
+    p.style.left=x+'%'; p.style.top=y+'%';
+    p.style.opacity=.25+.5*Math.abs(Math.sin(t*1.7+ph1));
+  });
+}
+</script>
+<script>
+/* ================= 场景时间轴（快节奏版 38 段） =================
+   音乐 onsets 锚点: 2.0 3.0 4.1 6.4 7.5 8.7 10.1 18.4 25.9 27.6 44.2 45.9 85.1 86.5 88.8 89.9 91.1 92.5 100.8 */
+
+/* ---- S1 | 0.0–2.0 | 冷开场钩子 ---- */
+reg(`
+  <div class="secLabel" style="top:70px;left:88px;"><span class="dot"></span><span class="txt" style="color:#FF6B6B;">WARNING</span></div>
+  <div style="position:absolute;top:150px;left:0;right:0;text-align:center;">
+    <div class="kicker" data-k>心 理 学 科 普</div>
+  </div>
+  <div style="position:absolute;top:300px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:120px;line-height:1.16;" data-g>你的大脑<br>正在变乱</div>
+  </div>
+  <div style="position:absolute;top:720px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:30px;">Your brain is getting messy —</div>
+  </div>
+  <div style="position:absolute;top:790px;left:50%;transform:translateX(-50%);width:300px;" data-hr><div class="hr"></div></div>
+`,2.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  popIn(el.querySelector('[data-k]'),t,0,.2);
+  zoomInEl(g,t,.15,.35);
+  popIn(el.querySelector('[data-e]'),t,.55,.2);
+  wipeEl(el.querySelector('[data-hr]'),t,.7,.25);
+});
+
+/* ---- S2 | 2.0–4.1 | 快问三连 ---- */
+reg(`
+  <div class="numBadge">01 / 序章</div>
+  <div style="position:absolute;top:210px;left:0;right:0;text-align:center;">
+    <div class="kicker" data-k>过 去 一 周</div>
+  </div>
+  <div data-list style="position:absolute;top:330px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:34px;align-items:center;">
+    <div class="pop" data-i style="display:flex;align-items:center;gap:24px;font-size:58px;font-weight:900;">
+      <span style="color:#FF6B6B;font-size:40px;">✕</span> 睡不着，脑子停不下来</div>
+    <div class="pop" data-i style="display:flex;align-items:center;gap:24px;font-size:58px;font-weight:900;">
+      <span style="color:#F2C94C;font-size:40px;">✕</span> 一件事反复想八百遍</div>
+    <div class="pop" data-i style="display:flex;align-items:center;gap:24px;font-size:58px;font-weight:900;">
+      <span style="color:#FF6B6B;font-size:40px;">✕</span> 计划一堆，行动为零</div>
+  </div>
+`,2.1,(el,t)=>{
+  popIn(el.querySelector('[data-k]'),t,0,.18);
+  const items=el.querySelectorAll('[data-i]');
+  items.forEach((it,i)=>popIn(it,t,.12+i*.16,.22));
+});
+
+/* ---- S3 | 4.1–6.4 | 转折句 ---- */
+reg(`
+  <div style="position:absolute;top:330px;left:0;right:0;text-align:center;">
+    <div style="font-size:76px;font-weight:900;color:rgba(245,246,250,.85);" data-a>这不是你的错</div>
+  </div>
+  <div style="position:absolute;top:470px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:100px;font-weight:900;" data-g>这是物理定律</div>
+  </div>
+  <div style="position:absolute;top:640px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:28px;">It's the law of physics.</div>
+  </div>
+`,2.3,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  popIn(el.querySelector('[data-a]'),t,0,.22);
+  zoomInEl(g,t,.25,.3);
+  popIn(el.querySelector('[data-e]'),t,.6,.2);
+});
+
+/* ---- S4 | 6.4–8.7 | 标题卡 ---- */
+reg(`
+  <div style="position:absolute;inset:0;background:rgba(11,13,23,.35);"></div>
+  <div style="position:absolute;top:0;left:0;right:0;height:10px;background:linear-gradient(90deg,#6BCB77,#F2C94C,#FF6B6B);" data-bar></div>
+  <div style="position:absolute;top:240px;left:0;right:0;text-align:center;">
+    <div class="kicker" data-k>本 期 主 角</div>
+  </div>
+  <div style="position:absolute;top:360px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:190px;letter-spacing:.04em;" data-g>心理熵</div>
+  </div>
+  <div style="position:absolute;top:620px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:44px;">Psychic Entropy</div>
+  </div>
+  <div style="position:absolute;top:730px;left:50%;transform:translateX(-50%);" data-chip>
+    <div class="chip"><span class="cd" style="background:#6BCB77;"></span>心理学 × 热力学</div>
+  </div>
+`,2.3,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  wipeEl(el.querySelector('[data-bar]'),t,0,.25);
+  popIn(el.querySelector('[data-k]'),t,.1,.2);
+  zoomInEl(g,t,.2,.35);
+  popIn(el.querySelector('[data-e]'),t,.5,.25);
+  zoomInEl(el.querySelector('[data-chip]'),t,.75,.25);
+});
+
+/* ---- S5 | 8.7–10.1 | 出处 ---- */
+reg(`
+  <div class="secLabel"><span class="dot"></span><span class="txt">Source</span></div>
+  <div class="numBadge">02 / 出处</div>
+  <div style="position:absolute;top:270px;left:0;right:0;text-align:center;">
+    <div style="font-size:44px;font-weight:700;color:rgba(245,246,250,.6);" data-a>概念提出者</div>
+  </div>
+  <div style="position:absolute;top:380px;left:0;right:0;text-align:center;">
+    <div style="font-size:74px;font-weight:900;" data-n>米哈里·契克森米哈赖</div>
+  </div>
+  <div style="position:absolute;top:500px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:30px;">Mihaly Csikszentmihalyi</div>
+  </div>
+  <div style="position:absolute;top:590px;left:50%;transform:translateX(-50%);" data-chips style="display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#4FA3F1;"></span>积极心理学奠基人</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#F2C94C;"></span>「心流」之父</div>
+  </div>
+`,1.4,(el,t)=>{
+  popIn(el.querySelector('[data-a]'),t,0,.18);
+  slideLIn(el.querySelector('[data-n]'),t,.1,.22);
+  popIn(el.querySelector('[data-e]'),t,.3,.2);
+  const chips=el.querySelectorAll('[data-chips] .chip');
+  chips.forEach((c,i)=>slideRIn(c,t,.45+i*.14,.2));
+});
+
+/* ---- S6 | 10.1–13.0 | 热力学熵回顾 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Physics</span></div>
+  <div class="numBadge">03 / 物理基础</div>
+  <div data-box style="position:absolute;top:250px;left:50%;transform:translateX(-50%);display:flex;gap:60px;align-items:center;">
+    <div style="text-align:center;">
+      <div style="font-size:64px;font-weight:900;color:#4FA3F1;" data-f>S = k log W</div>
+      <div style="font-size:26px;color:rgba(245,246,250,.5);margin-top:14px;" data-fd>玻尔兹曼熵公式</div>
+    </div>
+    <div style="width:4px;height:120px;background:rgba(255,255,255,.18);border-radius:2px;" data-dv></div>
+    <div style="text-align:center;">
+      <div style="font-size:56px;font-weight:900;" data-s2>熵 = 系统<span style="color:#FF6B6B;">无序度</span></div>
+      <div style="font-size:26px;color:rgba(245,246,250,.5);margin-top:14px;" data-s2d>越乱，熵越大</div>
+    </div>
+  </div>
+  <div data-bars style="position:absolute;top:600px;left:50%;transform:translateX(-50%);display:flex;gap:26px;align-items:flex-end;">
+    <div data-b style="width:70px;background:#6BCB77;border-radius:8px 8px 0 0;height:60px;"></div>
+    <div data-b style="width:70px;background:#6BCB77;border-radius:8px 8px 0 0;height:95px;"></div>
+    <div data-b style="width:70px;background:#F2C94C;border-radius:8px 8px 0 0;height:140px;"></div>
+    <div data-b style="width:70px;background:#F2C94C;border-radius:8px 8px 0 0;height:185px;"></div>
+    <div data-b style="width:70px;background:#FF6B6B;border-radius:8px 8px 0 0;height:230px;"></div>
+  </div>
+  <div style="position:absolute;top:860px;left:0;right:0;text-align:center;font-size:26px;color:rgba(245,246,250,.45);" data-cap>房间会乱 · 热量会散 · 信息会丢 —— 宇宙的默认走向</div>
+`,2.9,(el,t)=>{
+  zoomInEl(el.querySelector('[data-f]'),t,0,.25);
+  popIn(el.querySelector('[data-fd]'),t,.2,.2);
+  const dv=el.querySelector('[data-dv]'); popIn(dv,t,.3,.2);
+  slideRIn(el.querySelector('[data-s2]'),t,.35,.25);
+  popIn(el.querySelector('[data-s2d]'),t,.55,.2);
+  el.querySelectorAll('[data-b]').forEach((b,i)=>{ const p=IN(t,.3,.5+i*.08);
+    const full=parseInt(b.dataset.h||b.style.height); b.style.height=(full*p)+'px'; b.style.opacity=p; b.dataset.h=full; });
+  popIn(el.querySelector('[data-cap]'),t,1.4,.25);
+});
+
+/* ---- S7 | 13.0–15.5 | 熵增定律 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">2nd Law</span></div>
+  <div class="numBadge">04 / 熵增定律</div>
+  <div style="position:absolute;top:300px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:92px;font-weight:900;" data-g>孤立系统<br>总趋于混乱</div>
+  </div>
+  <div style="position:absolute;top:620px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:28px;">Entropy never decreases.</div>
+  </div>
+  <div style="position:absolute;top:700px;left:50%;transform:translateX(-50%);" data-w>
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#FF6B6B;"></span>不注入能量 · 混乱只增不减</div>
+  </div>
+`,2.5,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  popIn(el.querySelector('[data-e]'),t,.5,.2);
+  zoomInEl(el.querySelector('[data-w]'),t,.7,.22);
+});
+
+/* ---- S8 | 15.5–18.4 | 从物理到心理 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Bridge</span></div>
+  <div class="numBadge">05 / 跨界</div>
+  <div data-l style="position:absolute;top:270px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:46px;">
+    <div class="cardBox" style="width:360px;height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+      <div style="font-size:44px;font-weight:900;color:#4FA3F1;">物理世界</div>
+      <div style="font-size:26px;color:rgba(245,246,250,.55);">分子热运动</div>
+    </div>
+    <div style="font-size:70px;color:#F2C94C;font-weight:900;">→</div>
+    <div class="cardBox" style="width:360px;height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+      <div style="font-size:44px;font-weight:900;color:#FF6B6B;">精神世界</div>
+      <div style="font-size:26px;color:rgba(245,246,250,.55);">意识与念头</div>
+    </div>
+  </div>
+  <div style="position:absolute;top:620px;left:0;right:0;text-align:center;">
+    <div style="font-size:56px;font-weight:900;" data-q>意识，也是一个系统</div>
+  </div>
+  <div style="position:absolute;top:720px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:26px;">Consciousness is a system, too.</div>
+  </div>
+`,2.9,(el,t)=>{
+  slideLIn(el.querySelector('[data-l]'),t,0,.3);
+  popIn(el.querySelector('[data-q]'),t,.5,.25);
+  popIn(el.querySelector('[data-e]'),t,.85,.2);
+});
+
+/* ---- S9 | 18.4–21.5 | 心理熵定义 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">Definition</span></div>
+  <div class="numBadge">06 / 定义</div>
+  <div style="position:absolute;top:250px;left:0;right:0;text-align:center;">
+    <div class="kicker" data-k>心 理 熵</div>
+  </div>
+  <div style="position:absolute;top:360px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:86px;line-height:1.3;" data-g>意识和信息的<br><span style="color:#F2C94C;">混乱程度</span></div>
+  </div>
+  <div data-cards style="position:absolute;top:700px;left:50%;transform:translateX(-50%);display:flex;gap:26px;">
+    <div class="cardBox" style="width:420px;padding:26px 20px;text-align:center;">
+      <div style="font-size:30px;font-weight:800;color:#6BCB77;">念头打架</div>
+      <div style="font-size:22px;color:rgba(245,246,250,.5);margin-top:8px;">互相冲突的欲望</div>
+    </div>
+    <div class="cardBox" style="width:420px;padding:26px 20px;text-align:center;">
+      <div style="font-size:30px;font-weight:800;color:#F2C94C;">注意力涣散</div>
+      <div style="font-size:22px;color:rgba(245,246,250,.5);margin-top:8px;">信息过载与失焦</div>
+    </div>
+    <div class="cardBox" style="width:420px;padding:26px 20px;text-align:center;">
+      <div style="font-size:30px;font-weight:800;color:#FF6B6B;">自我失序</div>
+      <div style="font-size:22px;color:rgba(245,246,250,.5);margin-top:8px;">"我"被念头淹没</div>
+    </div>
+  </div>
+`,3.1,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  popIn(el.querySelector('[data-k]'),t,0,.2);
+  zoomInEl(g,t,.15,.3);
+  el.querySelectorAll('[data-cards] .cardBox').forEach((c,i)=>popIn(c,t,.7+i*.18,.24));
+});
+
+/* ---- S10 | 21.5–24.0 | 念头数量 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">Data</span></div>
+  <div class="numBadge">07 / 数据</div>
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:300px;left:0;right:0;text-align:center;">
+    <div data-n style="font-size:170px;font-weight:900;color:#F2C94C;font-variant-numeric:tabular-nums;line-height:1;">0</div>
+  </div>
+  <div style="position:absolute;top:520px;left:0;right:0;text-align:center;">
+    <div data-u style="font-size:40px;font-weight:800;">个念头 / 天，从你脑中闪过</div>
+  </div>
+  <div style="position:absolute;top:610px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:26px;">Thoughts per day (Nat. Science Foundation, est.)</div>
+  </div>
+  <div style="position:absolute;top:690px;left:50%;transform:translateX(-50%);" data-w>
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#FF6B6B;"></span>其中 80% 是消极重复的</div>
+  </div>
+`,2.5,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),26,{seed:7,colors:['rgba(242,201,76,.8)','rgba(255,107,107,.7)','rgba(79,163,241,.7)'],minR:3,maxR:8}); }
+  brownian(el._pts,t,1.6,7);
+  const n=el.querySelector('[data-n]'); const v=Math.round(lerp(0,60000,eo(LIN(t,.9,.15))));
+  n.textContent=fmtNum(v);
+  popIn(n,t,0,.2,0); n.style.transform='none';
+  popIn(el.querySelector('[data-u]'),t,.6,.22);
+  popIn(el.querySelector('[data-e]'),t,.85,.2);
+  zoomInEl(el.querySelector('[data-w]'),t,1.1,.22);
+});
+
+/* ---- S11 | 24.0–27.6 | 注意力带宽 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">Bandwidth</span></div>
+  <div class="numBadge">08 / 带宽</div>
+  <div style="position:absolute;top:270px;left:0;right:0;text-align:center;">
+    <div style="font-size:44px;font-weight:700;color:rgba(245,246,250,.7);" data-a>意识的信息吞吐量</div>
+  </div>
+  <div style="position:absolute;top:390px;left:0;right:0;text-align:center;">
+    <div data-n style="font-size:150px;font-weight:900;color:#4FA3F1;font-variant-numeric:tabular-nums;line-height:1;">0</div>
+    <div data-u style="font-size:38px;font-weight:800;margin-top:18px;">bit / 秒 —— 这就是全部带宽</div>
+  </div>
+  <div data-cmp style="position:absolute;top:700px;left:50%;transform:translateX(-50%);display:flex;gap:26px;">
+    <div class="cardBox" style="padding:22px 34px;text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:#6BCB77;">听懂一句话</div>
+      <div style="font-size:22px;color:rgba(245,246,250,.5);margin-top:6px;">≈ 40 bit/s</div>
+    </div>
+    <div class="cardBox" style="padding:22px 34px;text-align:center;">
+      <div style="font-size:28px;font-weight:800;color:#F2C94C;">刷短视频</div>
+      <div style="font-size:22px;color:rgba(245,246,250,.5);margin-top:6px;">带宽被瞬间占满</div>
+    </div>
+  </div>
+`,3.6,(el,t)=>{
+  const n=el.querySelector('[data-n]'); const v=Math.round(lerp(0,126,eo(LIN(t,.8,.15))));
+  n.textContent=v;
+  popIn(el.querySelector('[data-a]'),t,0,.2);
+  popIn(n,t,.1,.2,0); n.style.transform='none';
+  popIn(el.querySelector('[data-u]'),t,.7,.22);
+  el.querySelectorAll('[data-cmp] .cardBox').forEach((c,i)=>popIn(c,t,1.1+i*.2,.24));
+});
+
+/* ---- S12 | 27.6–31.0 | 表现① 焦虑 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#FF6B6B;box-shadow:0 0 18px #FF6B6B;"></span><span class="txt">Symptom 1</span></div>
+  <div class="numBadge">09 / 熵增表现</div>
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:280px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:110px;font-weight:900;" data-g>焦虑</div>
+  </div>
+  <div style="position:absolute;top:480px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:40px;font-weight:700;color:rgba(245,246,250,.85);">念头像失控的粒子，四处乱撞</div>
+  </div>
+  <div data-chips style="position:absolute;top:600px;left:50%;transform:translateX(-50%);display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>反刍思维</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>灾难化想象</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>静不下来</div>
+  </div>
+`,3.4,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),34,{seed:21,colors:['rgba(255,107,107,.75)','rgba(255,70,85,.6)','rgba(242,201,76,.5)'],minR:4,maxR:10}); }
+  brownian(el._pts,t,2.6,21);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.28);
+  popIn(el.querySelector('[data-s]'),t,.4,.22);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,.8+i*.16,.2));
+});
+</script>
+<script>
+/* ---- S13 | 31.0–34.5 | 表现② 拖延（手机 UI） ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#FF6B6B;box-shadow:0 0 18px #FF6B6B;"></span><span class="txt">Symptom 2</span></div>
+  <div class="numBadge">10 / 熵增表现</div>
+  <div class="phone" data-ph style="left:210px;top:200px;width:430px;height:680px;">
+    <div class="notch"></div>
+    <div class="statusbar"><span>23:47</span><span>⁙ 5G 87%</span></div>
+    <div class="appTitle">今 日 待 办</div>
+    <div data-tl>
+      <div class="todoItem" data-ti><div class="cb"></div><span>写年终总结</span></div>
+      <div class="todoItem" data-ti><div class="cb"></div><span>回复 12 封邮件</span></div>
+      <div class="todoItem" data-ti><div class="cb"></div><span>健身 45 分钟</span></div>
+      <div class="todoItem" data-ti><div class="cb"></div><span>学英语</span></div>
+      <div class="todoItem" data-ti><div class="cb"></div><span>读书 30 页</span></div>
+      <div class="todoItem" data-ti><div class="cb"></div><span>整理房间</span></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:760px;top:300px;right:120px;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>拖延</div>
+    <div style="font-size:34px;font-weight:700;color:rgba(245,246,250,.8);margin-top:30px;line-height:1.6;" data-s>清单越长越瘫痪<br>熵越高，启动越难</div>
+    <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap;" data-chips>
+      <div class="chip" style="font-size:23px;"><span class="cd" style="background:#FF6B6B;"></span>选择过载</div>
+      <div class="chip" style="font-size:23px;"><span class="cd" style="background:#F2C94C;"></span>完美主义</div>
+      <div class="chip" style="font-size:23px;"><span class="cd" style="background:#FF6B6B;"></span>回避情绪</div>
+    </div>
+  </div>
+`,3.5,(el,t)=>{
+  zoomInEl(el.querySelector('[data-ph]'),t,0,.3);
+  el.querySelectorAll('[data-ti]').forEach((it,i)=>slideLIn(it,t,.25+i*.1,.18));
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  slideRIn(g,t,.4,.25);
+  popIn(el.querySelector('[data-s]'),t,.75,.22);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,1.3+i*.15,.2));
+});
+
+/* ---- S14 | 34.5–38.0 | 表现③ 内耗 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#FF6B6B;box-shadow:0 0 18px #FF6B6B;"></span><span class="txt">Symptom 3</span></div>
+  <div class="numBadge">11 / 熵增表现</div>
+  <div style="position:absolute;top:250px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>精神内耗</div>
+  </div>
+  <div data-vs style="position:absolute;top:430px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:38px;">
+    <div class="cardBox" data-a style="width:400px;padding:34px 26px;text-align:center;">
+      <div style="font-size:34px;font-weight:900;color:#4FA3F1;">想做的我</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;">"现在就开始"</div>
+    </div>
+    <div data-x style="font-size:64px;font-weight:900;color:#FF6B6B;">VS</div>
+    <div class="cardBox" data-b style="width:400px;padding:34px 26px;text-align:center;">
+      <div style="font-size:34px;font-weight:900;color:#FF6B6B;">逃避的我</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;">"再刷五分钟"</div>
+    </div>
+  </div>
+  <div style="position:absolute;top:680px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:38px;font-weight:700;color:rgba(245,246,250,.85);">两个"自我"打架，能量全烧在内战上</div>
+    <div class="enTag" data-e style="font-size:24px;margin-top:16px;">Internal friction = psychic noise</div>
+  </div>
+`,3.5,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.28);
+  slideLIn(el.querySelector('[data-a]'),t,.35,.24);
+  const x=el.querySelector('[data-x]');
+  const fight=1+.12*Math.abs(Math.sin(t*6.5));
+  x.style.transform=`scale(${fight.toFixed(3)})`; x.style.opacity=IN(t,.55,.15);
+  slideRIn(el.querySelector('[data-b]'),t,.45,.24);
+  popIn(el.querySelector('[data-s]'),t,.95,.22);
+  popIn(el.querySelector('[data-e]'),t,1.3,.2);
+});
+
+/* ---- S15 | 38.0–41.5 | 表现④ 决策疲劳 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#FF6B6B;box-shadow:0 0 18px #FF6B6B;"></span><span class="txt">Symptom 4</span></div>
+  <div class="numBadge">12 / 熵增表现</div>
+  <div style="position:absolute;top:250px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>决策疲劳</div>
+  </div>
+  <div style="position:absolute;top:430px;left:50%;transform:translateX(-50%);" data-barwrap>
+    <div style="font-size:28px;font-weight:700;color:rgba(245,246,250,.6);margin-bottom:18px;">一天 35000+ 个决定，前额叶电量：</div>
+    <div style="width:900px;height:46px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);overflow:hidden;position:relative;">
+      <div data-bat style="position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#6BCB77,#F2C94C 60%,#FF6B6B);"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#0B0D17;" data-lbl>100% 剩余</div>
+    </div>
+  </div>
+  <div data-rows style="position:absolute;top:650px;left:50%;transform:translateX(-50%);display:flex;gap:26px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>早上：理性果断</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#F2C94C;"></span>下午：开始犹豫</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>晚上：瘫着刷手机</div>
+  </div>
+`,3.5,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.28);
+  popIn(el.querySelector('[data-barwrap]'),t,.4,.22);
+  const bat=el.querySelector('[data-bat]'), lbl=el.querySelector('[data-lbl]');
+  const p=eo(LIN(t,1.6,.8)); const pct=Math.round(lerp(100,7,p));
+  bat.style.width=pct+'%'; lbl.textContent=pct+'% 剩余';
+  lbl.style.color=pct>50?'#0B0D17':'#F5F6FA';
+  el.querySelectorAll('[data-rows] .chip').forEach((c,i)=>popIn(c,t,1.2+i*.18,.2));
+});
+
+/* ---- S16 | 41.5–44.2 | 手机=熵加速器 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#FF6B6B;box-shadow:0 0 18px #FF6B6B;"></span><span class="txt">Accelarator</span></div>
+  <div class="numBadge">13 / 熵加速器</div>
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:290px;left:0;right:0;text-align:center;">
+    <div style="font-size:64px;font-weight:900;color:rgba(245,246,250,.9);" data-a>每一刷，都在给大脑<span style="color:#FF6B6B;">注入熵</span></div>
+  </div>
+  <div style="position:absolute;top:440px;left:0;right:0;text-align:center;">
+    <div data-n style="font-size:130px;font-weight:900;color:#FF6B6B;font-variant-numeric:tabular-nums;line-height:1;">0<span style="font-size:56px;color:rgba(245,246,250,.6);"> 次强刺激 / 小时</span></div>
+  </div>
+  <div data-chips style="position:absolute;top:680px;left:50%;transform:translateX(-50%);display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>15 秒一个刺激</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>多巴胺阈值升高</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#FF6B6B;"></span>静息=戒断反应</div>
+  </div>
+`,2.7,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),40,{seed:99,colors:['rgba(255,107,107,.8)','rgba(242,201,76,.65)','rgba(255,70,85,.7)'],minR:3,maxR:11}); }
+  const sp=lerp(.8,4.2,eo(LIN(t,2.2,.2)));
+  brownian(el._pts,t,sp,99);
+  popIn(el.querySelector('[data-a]'),t,0,.24);
+  const n=el.querySelector('[data-n]'); const v=Math.round(lerp(0,240,eo(LIN(t,.9,.25))));
+  n.firstChild.textContent=v;
+  popIn(n,t,.2,.2,0); n.style.transform='none';
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,1.3+i*.16,.2));
+});
+
+/* ---- S17 | 44.2–47.5 | ESM 实验 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Experiment</span></div>
+  <div class="numBadge">14 / 实验</div>
+  <div style="position:absolute;top:260px;left:0;right:0;text-align:center;">
+    <div style="font-size:40px;font-weight:700;color:rgba(245,246,250,.65);" data-a>米哈里做了件狠事：</div>
+    <div class="glitch" style="font-size:88px;font-weight:900;margin-top:26px;" data-g>给生活装"行车记录仪"</div>
+  </div>
+  <div data-cards style="position:absolute;top:560px;left:50%;transform:translateX(-50%);display:flex;gap:30px;">
+    <div class="cardBox" style="width:430px;padding:30px 26px;text-align:center;">
+      <div style="font-size:44px;font-weight:900;color:#4FA3F1;">体验取样法</div>
+      <div class="enTag" style="font-size:24px;margin-top:10px;">ESM · Experience Sampling</div>
+    </div>
+    <div class="cardBox" style="width:430px;padding:30px 26px;text-align:center;">
+      <div style="font-size:34px;font-weight:800;">每天随机响铃 ×8</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;">当场记录：你在想什么、感觉如何</div>
+    </div>
+    <div class="cardBox" style="width:430px;padding:30px 26px;text-align:center;">
+      <div style="font-size:44px;font-weight:900;color:#F2C94C;">数十万条</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;">真实瞬间的意识快照</div>
+    </div>
+  </div>
+`,3.3,(el,t)=>{
+  popIn(el.querySelector('[data-a]'),t,0,.2);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.25,.3);
+  el.querySelectorAll('[data-cards] .cardBox').forEach((c,i)=>popIn(c,t,.9+i*.18,.22));
+});
+
+/* ---- S18 | 47.5–51.0 | 心流=负熵 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Discovery</span></div>
+  <div class="numBadge">15 / 关键发现</div>
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:270px;left:0;right:0;text-align:center;">
+    <div style="font-size:40px;font-weight:700;color:rgba(245,246,250,.65);" data-a>数据里藏着一个反常状态：</div>
+  </div>
+  <div style="position:absolute;top:390px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:120px;font-weight:900;" data-g><span style="color:#6BCB77;">心流</span> = 负熵</div>
+  </div>
+  <div style="position:absolute;top:600px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:38px;font-weight:700;color:rgba(245,246,250,.85);line-height:1.6;">全神贯注时，意识井然有序<br>熵，降到了最低</div>
+  </div>
+  <div style="position:absolute;top:770px;left:50%;transform:translateX(-50%);" data-w>
+    <div class="chip" style="font-size:25px;"><span class="cd" style="background:#6BCB77;"></span>米哈里因此写下《心流》</div>
+  </div>
+`,3.5,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),20,{seed:33,colors:['rgba(107,203,119,.65)','rgba(79,163,241,.55)'],minR:3,maxR:7}); }
+  brownian(el._pts,t,.55,33);
+  popIn(el.querySelector('[data-a]'),t,0,.2);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.3,.32);
+  popIn(el.querySelector('[data-s]'),t,.8,.24);
+  zoomInEl(el.querySelector('[data-w]'),t,1.7,.22);
+});
+
+/* ---- S19 | 51.0–55.0 | 心流通道图 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Flow Channel</span></div>
+  <div class="numBadge">16 / 心流通道</div>
+  <div class="flowAxes" data-ax style="left:560px;top:250px;width:680px;height:560px;"></div>
+  <div class="flowCurve" data-fc style="left:600px;top:330px;width:520px;height:380px;border-color:#6BCB77;"></div>
+  <div style="position:absolute;left:520px;top:830px;font-size:26px;font-weight:700;color:rgba(245,246,250,.6);" data-xl>技能水平 →</div>
+  <div style="position:absolute;left:400px;top:510px;font-size:26px;font-weight:700;color:rgba(245,246,250,.6);transform:rotate(-90deg);transform-origin:left top;" data-yl>任务难度 →</div>
+  <div class="flowZone" data-z1 style="left:900px;top:300px;color:#FF6B6B;">焦虑区<div style="font-size:20px;font-weight:600;color:rgba(245,246,250,.5);">难度 > 技能</div></div>
+  <div class="flowZone" data-z2 style="left:640px;top:640px;color:#4FA3F1;">无聊区<div style="font-size:20px;font-weight:600;color:rgba(245,246,250,.5);">难度 < 技能</div></div>
+  <div class="flowZone" data-z3 style="left:760px;top:450px;color:#6BCB77;font-size:34px;text-shadow:0 0 24px rgba(107,203,119,.5);">心流通道<div style="font-size:20px;font-weight:600;color:rgba(245,246,250,.6);">难度 ≈ 技能+一点点</div></div>
+  <div data-dot style="position:absolute;left:830px;top:490px;width:26px;height:26px;border-radius:50%;background:#F2C94C;box-shadow:0 0 26px #F2C94C;"></div>
+  <div style="position:absolute;left:1300px;top:300px;width:490px;" data-side>
+    <div style="font-size:34px;font-weight:900;line-height:1.55;">熵只在<br>「太简单」与「太难」<br>之间飙升</div>
+    <div class="hr" style="width:220px;margin:24px 0;"></div>
+    <div style="font-size:26px;color:rgba(245,246,250,.6);line-height:1.7;">刚刚好的挑战<br>= 意识的最高秩序</div>
+  </div>
+`,4.0,(el,t)=>{
+  wipeEl(el.querySelector('[data-ax]'),t,0,.3);
+  zoomInEl(el.querySelector('[data-fc]'),t,.3,.35);
+  popIn(el.querySelector('[data-xl]'),t,.5,.2);
+  popIn(el.querySelector('[data-yl]'),t,.55,.2);
+  slideRIn(el.querySelector('[data-z1]'),t,.9,.22);
+  slideLIn(el.querySelector('[data-z2]'),t,1.1,.22);
+  zoomInEl(el.querySelector('[data-z3]'),t,1.5,.3);
+  const d=el.querySelector('[data-dot]');
+  const p=easeInOut(LIN(t,2.6,1.1));
+  const x=lerp(700,1000,p), y=lerp(700,330,p);
+  d.style.left=x+'px'; d.style.top=y+'px'; d.style.opacity=LIN(t,.2,2.4);
+  slideRIn(el.querySelector('[data-side]'),t,2.2,.3);
+});
+
+/* ---- S20 | 55.0–59.0 | 机制① DMN ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Mechanism 1</span></div>
+  <div class="numBadge">17 / 脑机制</div>
+  <div style="position:absolute;top:270px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:92px;font-weight:900;" data-g>默认模式网络</div>
+    <div class="enTag" data-e style="font-size:30px;margin-top:18px;">Default Mode Network · DMN</div>
+  </div>
+  <div data-rows style="position:absolute;top:560px;left:50%;transform:translateX(-50%);width:1280px;">
+    <div style="display:flex;align-items:center;gap:26px;padding:24px 34px;background:rgba(255,255,255,.045);border-radius:20px;border:1px solid rgba(255,255,255,.09);" data-r1>
+      <div style="font-size:30px;font-weight:900;color:#4FA3F1;flex:none;">发呆时</div>
+      <div style="font-size:28px;color:rgba(245,246,250,.75);">DMN 全速运转 —— 疯狂反刍过去、担忧未来</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;padding:24px 34px;background:rgba(255,255,255,.045);border-radius:20px;border:1px solid rgba(255,255,255,.09);margin-top:20px;" data-r2>
+      <div style="font-size:30px;font-weight:900;color:#6BCB77;flex:none;">专注时</div>
+      <div style="font-size:28px;color:rgba(245,246,250,.75);">DMN 静默 —— 熵噪音消失，只剩当下</div>
+    </div>
+  </div>
+  <div style="position:absolute;top:800px;left:0;right:0;text-align:center;font-size:26px;color:rgba(245,246,250,.5);" data-cap>「心理熵」的神经基础，就藏在这张网络里</div>
+`,4.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  popIn(el.querySelector('[data-e]'),t,.4,.22);
+  slideLIn(el.querySelector('[data-r1]'),t,.8,.25);
+  slideRIn(el.querySelector('[data-r2]'),t,1.4,.25);
+  popIn(el.querySelector('[data-cap]'),t,2.2,.24);
+});
+
+/* ---- S21 | 59.0–63.0 | 机制② 前额叶 vs 边缘系统 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Mechanism 2</span></div>
+  <div class="numBadge">18 / 脑机制</div>
+  <div data-vs style="position:absolute;top:270px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:44px;">
+    <div class="cardBox" data-a style="width:520px;padding:38px 30px;text-align:center;">
+      <div style="font-size:38px;font-weight:900;color:#4FA3F1;">前额叶皮层</div>
+      <div class="enTag" style="font-size:22px;margin-top:8px;">理性指挥官 · 25 岁才成熟</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.6);margin-top:14px;">负责专注、计划、抑制冲动</div>
+    </div>
+    <div data-x style="font-size:58px;font-weight:900;color:#FF6B6B;">VS</div>
+    <div class="cardBox" data-b style="width:520px;padding:38px 30px;text-align:center;">
+      <div style="font-size:38px;font-weight:900;color:#FF6B6B;">边缘系统</div>
+      <div class="enTag" style="font-size:22px;margin-top:8px;">情绪警报器 · 进化了上亿年</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.6);margin-top:14px;">负责恐惧、欲望、即时满足</div>
+    </div>
+  </div>
+  <div style="position:absolute;top:620px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:44px;font-weight:900;">熬夜、高压、碎片信息<br><span style="color:#FF6B6B;">都在给指挥官"断电"</span></div>
+  </div>
+  <div style="position:absolute;top:800px;left:0;right:0;text-align:center;">
+    <div data-s2 style="font-size:28px;color:rgba(245,246,250,.55);">警报器接管大脑的那一刻，就是心理熵爆表的时刻</div>
+  </div>
+`,4.0,(el,t)=>{
+  slideLIn(el.querySelector('[data-a]'),t,0,.26);
+  const x=el.querySelector('[data-x]');
+  x.style.transform=`scale(${(1+.1*Math.abs(Math.sin(t*5.8))).toFixed(3)})`; x.style.opacity=IN(t,.35,.15);
+  slideRIn(el.querySelector('[data-b]'),t,.15,.26);
+  popIn(el.querySelector('[data-s]'),t,.9,.26);
+  popIn(el.querySelector('[data-s2]'),t,1.8,.22);
+});
+
+/* ---- S22 | 63.0–66.5 | 反熵第一律 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Anti-Entropy 1</span></div>
+  <div class="numBadge">19 / 熵减法则</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div data-num style="font-size:150px;font-weight:900;color:#6BCB77;line-height:1;">01</div>
+  </div>
+  <div style="position:absolute;top:420px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>目标清晰</div>
+  </div>
+  <div style="position:absolute;top:590px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:36px;font-weight:700;color:rgba(245,246,250,.8);line-height:1.65;">熵怕的不是难，是"不知道干嘛"<br>把「变得更好」换成「今晚跑 3 公里」</div>
+  </div>
+  <div data-chips style="position:absolute;top:760px;left:50%;transform:translateX(-50%);display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>具体到数字</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>小到不可能失败</div>
+  </div>
+`,3.5,(el,t)=>{
+  zoomInEl(el.querySelector('[data-num]'),t,0,.3);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.35,.3);
+  popIn(el.querySelector('[data-s]'),t,.8,.24);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,1.6+i*.16,.2));
+});
+
+/* ---- S23 | 66.5–70.0 | 反熵第二律 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Anti-Entropy 2</span></div>
+  <div class="numBadge">20 / 熵减法则</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div data-num style="font-size:150px;font-weight:900;color:#6BCB77;line-height:1;">02</div>
+  </div>
+  <div style="position:absolute;top:420px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>即时反馈</div>
+  </div>
+  <div style="position:absolute;top:590px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:36px;font-weight:700;color:rgba(245,246,250,.8);line-height:1.65;">游戏让人上瘾的秘密，就是它<br>每 10 秒告诉你一次"你很棒"</div>
+  </div>
+  <div data-chips style="position:absolute;top:760px;left:50%;transform:translateX(-50%);display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>打卡记录</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>进度可视</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>完成即奖励</div>
+  </div>
+`,3.5,(el,t)=>{
+  zoomInEl(el.querySelector('[data-num]'),t,0,.3);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.35,.3);
+  popIn(el.querySelector('[data-s]'),t,.8,.24);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,1.6+i*.16,.2));
+});
+
+/* ---- S24 | 70.0–73.5 | 反熵第三律 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Anti-Entropy 3</span></div>
+  <div class="numBadge">21 / 熵减法则</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div data-num style="font-size:150px;font-weight:900;color:#6BCB77;line-height:1;">03</div>
+  </div>
+  <div style="position:absolute;top:420px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>难度匹配</div>
+  </div>
+  <div style="position:absolute;top:590px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:36px;font-weight:700;color:rgba(245,246,250,.8);line-height:1.65;">太难 → 焦虑　太易 → 无聊<br>踮脚够得着的难度，熵最低</div>
+  </div>
+  <div style="position:absolute;top:760px;left:50%;transform:translateX(-50%);" data-w>
+    <div class="chip" style="font-size:25px;"><span class="cd" style="background:#6BCB77;"></span>回到心流通道 · 每次加难 4%</div>
+  </div>
+`,3.5,(el,t)=>{
+  zoomInEl(el.querySelector('[data-num]'),t,0,.3);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.35,.3);
+  popIn(el.querySelector('[data-s]'),t,.8,.24);
+  zoomInEl(el.querySelector('[data-w]'),t,1.7,.22);
+});
+</script>
+<script>
+/* ---- S25 | 73.5–77.0 | 反熵第四律 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Anti-Entropy 4</span></div>
+  <div class="numBadge">22 / 熵减法则</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div data-num style="font-size:150px;font-weight:900;color:#6BCB77;line-height:1;">04</div>
+  </div>
+  <div style="position:absolute;top:420px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:96px;font-weight:900;" data-g>单点专注</div>
+  </div>
+  <div style="position:absolute;top:590px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:36px;font-weight:700;color:rgba(245,246,250,.8);line-height:1.65;">每次只允许一个念头进场<br>禅修者训练的，就是这个"守门员"</div>
+  </div>
+  <div data-chips style="position:absolute;top:760px;left:50%;transform:translateX(-50%);display:flex;gap:22px;">
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>番茄钟 25 分钟</div>
+    <div class="chip" style="font-size:24px;"><span class="cd" style="background:#6BCB77;"></span>手机放另一个房间</div>
+  </div>
+`,3.5,(el,t)=>{
+  zoomInEl(el.querySelector('[data-num]'),t,0,.3);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.35,.3);
+  popIn(el.querySelector('[data-s]'),t,.8,.24);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,1.6+i*.16,.2));
+});
+
+/* ---- S26 | 77.0–81.0 | 熵减实践三件套 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Practice</span></div>
+  <div class="numBadge">23 / 日常熵减</div>
+  <div style="position:absolute;top:250px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:84px;font-weight:900;" data-g>给大脑请保洁</div>
+  </div>
+  <div data-cards style="position:absolute;top:460px;left:50%;transform:translateX(-50%);display:flex;gap:34px;">
+    <div class="cardBox" style="width:430px;padding:36px 28px;text-align:center;">
+      <div style="font-size:56px;">🏃</div>
+      <div style="font-size:34px;font-weight:900;color:#6BCB77;margin-top:14px;">运动</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;line-height:1.6;">BDNF 涨 3 倍<br>大脑天然的"降噪器"</div>
+    </div>
+    <div class="cardBox" style="width:430px;padding:36px 28px;text-align:center;">
+      <div style="font-size:56px;">🧘</div>
+      <div style="font-size:34px;font-weight:900;color:#4FA3F1;margin-top:14px;">冥想</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;line-height:1.6;">8 周 MRI 可见<br>DMN 连接重组</div>
+    </div>
+    <div class="cardBox" style="width:430px;padding:36px 28px;text-align:center;">
+      <div style="font-size:56px;">✍️</div>
+      <div style="font-size:34px;font-weight:900;color:#F2C94C;margin-top:14px;">写作</div>
+      <div style="font-size:24px;color:rgba(245,246,250,.55);margin-top:10px;line-height:1.6;">把混乱念头<br>"下载"到纸上归档</div>
+    </div>
+  </div>
+`,4.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  el.querySelectorAll('[data-cards] .cardBox').forEach((c,i)=>popIn(c,t,.5+i*.22,.26));
+});
+
+/* ---- S27 | 81.0–85.1 | 运动时的大脑 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Evidence</span></div>
+  <div class="numBadge">24 / 证据</div>
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:280px;left:0;right:0;text-align:center;">
+    <div data-a style="font-size:44px;font-weight:800;">跑步 30 分钟后，你的大脑里：</div>
+  </div>
+  <div data-rows style="position:absolute;top:420px;left:50%;transform:translateX(-50%);width:1150px;display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:26px 40px;background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.25);border-radius:20px;" data-r>
+      <div style="font-size:32px;font-weight:800;">脑源性神经营养因子</div>
+      <div style="font-size:40px;font-weight:900;color:#6BCB77;">↑ 300%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:26px 40px;background:rgba(79,163,241,.08);border:1px solid rgba(79,163,241,.25);border-radius:20px;" data-r>
+      <div style="font-size:32px;font-weight:800;">压力激素皮质醇</div>
+      <div style="font-size:40px;font-weight:900;color:#4FA3F1;">↓ 显著下降</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:26px 40px;background:rgba(242,201,76,.08);border:1px solid rgba(242,201,76,.25);border-radius:20px;" data-r>
+      <div style="font-size:32px;font-weight:800;">焦虑反刍时间</div>
+      <div style="font-size:40px;font-weight:900;color:#F2C94C;">↓ 持续缩短</div>
+    </div>
+  </div>
+`,4.1,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),16,{seed:55,colors:['rgba(107,203,119,.5)','rgba(79,163,241,.45)'],minR:3,maxR:6}); }
+  brownian(el._pts,t,.5,55);
+  popIn(el.querySelector('[data-a]'),t,0,.22);
+  el.querySelectorAll('[data-r]').forEach((r,i)=>slideLIn(r,t,.4+i*.28,.26));
+});
+
+/* ---- S28 | 85.1–88.8 | 快闪总结 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">Recap</span></div>
+  <div class="numBadge">25 / 30 秒总结</div>
+  <div style="position:absolute;top:220px;left:0;right:0;text-align:center;">
+    <div class="kicker" data-k>记 住 这 三 句</div>
+  </div>
+  <div data-rows style="position:absolute;top:340px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:38px;">
+    <div data-r class="glitch" style="font-size:66px;font-weight:900;">混乱是大脑的默认状态</div>
+    <div data-r class="glitch" style="font-size:66px;font-weight:900;">秩序，需要主动支付能量</div>
+    <div data-r class="glitch" style="font-size:66px;font-weight:900;color:#F2C94C;">心流，是可训练的负熵</div>
+  </div>
+`,3.7,(el,t)=>{
+  popIn(el.querySelector('[data-k]'),t,0,.2);
+  el.querySelectorAll('[data-r]').forEach((r,i)=>{
+    zoomInEl(r,t,.3+i*.75,.3); applyGlitch(r,t-(i*.75>0?0:0));
+  });
+});
+
+/* ---- S29 | 88.8–92.5 | 金句 ---- */
+reg(`
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 1100px 700px at 50% 45%,rgba(242,201,76,.08),transparent 60%);"></div>
+  <div style="position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#F2C94C,#FF6B6B);" data-bar></div>
+  <div style="position:absolute;top:330px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:110px;font-weight:900;line-height:1.35;" data-g>你要么熵增<br><span style="color:#F2C94C;">要么进化</span></div>
+  </div>
+  <div style="position:absolute;top:720px;left:0;right:0;text-align:center;">
+    <div class="enTag" data-e style="font-size:30px;">Rise in entropy, or rise in order.</div>
+  </div>
+`,3.7,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  wipeEl(el.querySelector('[data-bar]'),t,0,.3);
+  zoomInEl(g,t,.2,.4);
+  popIn(el.querySelector('[data-e]'),t,1.0,.25);
+});
+
+/* ---- S30 | 92.5–96.5 | 行动清单 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#6BCB77;box-shadow:0 0 18px #6BCB77;"></span><span class="txt">Tonight</span></div>
+  <div class="numBadge">26 / 行动清单</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:80px;font-weight:900;" data-g>今晚就能做的 3 件事</div>
+  </div>
+  <div data-list style="position:absolute;top:420px;left:50%;transform:translateX(-50%);width:1100px;display:flex;flex-direction:column;gap:24px;">
+    <div class="cardBox" data-it style="display:flex;align-items:center;gap:30px;padding:28px 40px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(107,203,119,.15);border:2px solid #6BCB77;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#6BCB77;flex:none;">1</div>
+      <div style="font-size:32px;font-weight:700;">睡前把明天最重要的一件事写下来（只要一件）</div>
+    </div>
+    <div class="cardBox" data-it style="display:flex;align-items:center;gap:30px;padding:28px 40px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(107,203,119,.15);border:2px solid #6BCB77;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#6BCB77;flex:none;">2</div>
+      <div style="font-size:32px;font-weight:700;">手机充电器，移到卧室外</div>
+    </div>
+    <div class="cardBox" data-it style="display:flex;align-items:center;gap:30px;padding:28px 40px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(107,203,119,.15);border:2px solid #6BCB77;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#6BCB77;flex:none;">3</div>
+      <div style="font-size:32px;font-weight:700;">明早专注 25 分钟，只做那件事</div>
+    </div>
+  </div>
+`,4.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  el.querySelectorAll('[data-it]').forEach((it,i)=>slideLIn(it,t,.4+i*.3,.26));
+});
+
+/* ---- S31 | 96.5–100.8 | 96% 警示回顾 ---- */
+reg(`
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:270px;left:0;right:0;text-align:center;">
+    <div data-n style="font-size:190px;font-weight:900;color:#FF6B6B;line-height:1;font-variant-numeric:tabular-nums;">0%</div>
+  </div>
+  <div style="position:absolute;top:510px;left:0;right:0;text-align:center;">
+    <div data-u style="font-size:44px;font-weight:800;">的现代人，处于长期高心理熵状态</div>
+  </div>
+  <div style="position:absolute;top:620px;left:0;right:0;text-align:center;">
+    <div data-e class="enTag" style="font-size:26px;">Most minds run hot and messy, all day.</div>
+  </div>
+  <div style="position:absolute;top:710px;left:50%;transform:translateX(-50%);" data-w>
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#FF6B6B;"></span>但今晚开始，你可以是剩下的 4%</div>
+  </div>
+`,4.3,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),30,{seed:77,colors:['rgba(255,107,107,.7)','rgba(255,70,85,.55)'],minR:3,maxR:9}); }
+  brownian(el._pts,t,2.0,77);
+  const n=el.querySelector('[data-n]'); const v=Math.round(lerp(0,96,eo(LIN(t,1.1,.2))));
+  n.textContent=v+'%';
+  n.style.opacity=1;
+  popIn(el.querySelector('[data-u]'),t,.9,.24);
+  popIn(el.querySelector('[data-e]'),t,1.5,.2);
+  zoomInEl(el.querySelector('[data-w]'),t,2.3,.24);
+});
+
+/* ---- S32 | 100.8–107.0 | 一句话记住 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">One Sentence</span></div>
+  <div class="numBadge">27 / 一句话</div>
+  <div style="position:absolute;top:300px;left:0;right:0;text-align:center;">
+    <div data-a style="font-size:38px;font-weight:700;color:rgba(245,246,250,.6);">如果只能带走一句话：</div>
+  </div>
+  <div style="position:absolute;top:430px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:92px;font-weight:900;line-height:1.4;" data-g>精神内耗<br>就是意识的熵增</div>
+  </div>
+  <div style="position:absolute;top:750px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:30px;color:rgba(245,246,250,.6);">而专注，是你唯一能主动选择的秩序</div>
+  </div>
+`,6.2,(el,t)=>{
+  popIn(el.querySelector('[data-a]'),t,0,.2);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.5,.4);
+  popIn(el.querySelector('[data-s]'),t,2.2,.25);
+});
+
+/* ---- S33 | 107.0–112.0 | 自测 3 题 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Self Test</span></div>
+  <div class="numBadge">28 / 自测</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:78px;font-weight:900;" data-g>你的心理熵有多高？</div>
+  </div>
+  <div data-list style="position:absolute;top:400px;left:50%;transform:translateX(-50%);width:1240px;display:flex;flex-direction:column;gap:22px;">
+    <div class="cardBox" data-q style="display:flex;align-items:center;gap:28px;padding:26px 38px;">
+      <div style="font-size:26px;font-weight:900;color:#4FA3F1;flex:none;">Q1</div>
+      <div style="font-size:30px;font-weight:700;">躺下后，念头还要"开会"多久？</div>
+    </div>
+    <div class="cardBox" data-q style="display:flex;align-items:center;gap:28px;padding:26px 38px;">
+      <div style="font-size:26px;font-weight:900;color:#4FA3F1;flex:none;">Q2</div>
+      <div style="font-size:30px;font-weight:700;">一件事没做好，会反刍几天？</div>
+    </div>
+    <div class="cardBox" data-q style="display:flex;align-items:center;gap:28px;padding:26px 38px;">
+      <div style="font-size:26px;font-weight:900;color:#4FA3F1;flex:none;">Q3</div>
+      <div style="font-size:30px;font-weight:700;">不看手机，能安静坐满 10 分钟吗？</div>
+    </div>
+  </div>
+  <div style="position:absolute;top:800px;left:0;right:0;text-align:center;">
+    <div data-c style="font-size:28px;color:rgba(245,246,250,.55);">评论区打出你的答案：1 / 2 / 3 —— 下期逐条拆解</div>
+  </div>
+`,5.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  el.querySelectorAll('[data-q]').forEach((q,i)=>slideRIn(q,t,.4+i*.32,.26));
+  popIn(el.querySelector('[data-c]'),t,2.4,.24);
+});
+
+/* ---- S34 | 112.0–118.0 | 话题标签 ---- */
+reg(`
+  <div style="position:absolute;top:260px;left:0;right:0;text-align:center;">
+    <div data-a style="font-size:46px;font-weight:800;color:rgba(245,246,250,.85);">如果这期让你想通了什么</div>
+  </div>
+  <div data-tags style="position:absolute;top:420px;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;gap:26px;padding:0 200px;">
+    <div class="chip" style="font-size:38px;font-weight:800;padding:20px 40px;"><span style="color:#4FA3F1;">#</span> 心理熵</div>
+    <div class="chip" style="font-size:38px;font-weight:800;padding:20px 40px;"><span style="color:#4FA3F1;">#</span> 精神内耗</div>
+    <div class="chip" style="font-size:38px;font-weight:800;padding:20px 40px;"><span style="color:#4FA3F1;">#</span> 心流</div>
+    <div class="chip" style="font-size:38px;font-weight:800;padding:20px 40px;"><span style="color:#4FA3F1;">#</span> 心理学科普</div>
+    <div class="chip" style="font-size:38px;font-weight:800;padding:20px 40px;"><span style="color:#4FA3F1;">#</span> 熵增定律</div>
+  </div>
+  <div style="position:absolute;top:700px;left:0;right:0;text-align:center;">
+    <div data-s style="font-size:30px;color:rgba(245,246,250,.55);">转给那个总说"我又内耗了"的朋友</div>
+  </div>
+`,6.0,(el,t)=>{
+  popIn(el.querySelector('[data-a]'),t,0,.24);
+  el.querySelectorAll('[data-tags] .chip').forEach((c,i)=>zoomInEl(c,t,.4+i*.2,.28));
+  popIn(el.querySelector('[data-s]'),t,2.8,.24);
+});
+
+/* ---- S35 | 118.0–124.0 | 系列预告 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#F2C94C;box-shadow:0 0 18px #F2C94C;"></span><span class="txt">Next Episode</span></div>
+  <div class="numBadge">29 / 下期预告</div>
+  <div style="position:absolute;top:280px;left:0;right:0;text-align:center;">
+    <div data-a style="font-size:34px;font-weight:700;color:rgba(245,246,250,.55);">心理学 × 硬科学 系列 · 下一期</div>
+  </div>
+  <div style="position:absolute;top:400px;left:0;right:0;text-align:center;">
+    <div class="glitchHard" style="font-size:130px;font-weight:900;" data-g>心流</div>
+    <div class="enTag" data-e style="font-size:36px;margin-top:20px;">FLOW · The Optimal Experience</div>
+  </div>
+  <div data-chips style="position:absolute;top:730px;left:50%;transform:translateX(-50%);display:flex;gap:24px;">
+    <div class="chip" style="font-size:25px;"><span class="cd" style="background:#6BCB77;"></span>如何手动触发心流</div>
+    <div class="chip" style="font-size:25px;"><span class="cd" style="background:#F2C94C;"></span>274 位顶尖创作者的共性</div>
+  </div>
+`,6.0,(el,t)=>{
+  popIn(el.querySelector('[data-a]'),t,0,.22);
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,.4,.4);
+  popIn(el.querySelector('[data-e]'),t,1.2,.25);
+  el.querySelectorAll('[data-chips] .chip').forEach((c,i)=>popIn(c,t,2.4+i*.2,.24));
+});
+
+/* ---- S36 | 124.0–130.0 | 知识点回顾滚动 ---- */
+reg(`
+  <div class="secLabel"><span class="dot" style="background:#4FA3F1;box-shadow:0 0 18px #4FA3F1;"></span><span class="txt">Recap Scroll</span></div>
+  <div class="numBadge">30 / 全片回顾</div>
+  <div style="position:absolute;top:230px;left:0;right:0;text-align:center;">
+    <div class="glitch" style="font-size:76px;font-weight:900;" data-g>147 秒 · 你学会了</div>
+  </div>
+  <div class="marqWrap" style="top:400px;height:560px;">
+    <div class="marqInner" data-m1 style="left:0;top:60px;flex-direction:row;">
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">心理熵</span><span style="font-size:40px;color:#4FA3F1;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">S = k log W</span><span style="font-size:40px;color:#4FA3F1;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">60000 念头/天</span><span style="font-size:40px;color:#4FA3F1;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">126 bit/s</span><span style="font-size:40px;color:#4FA3F1;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">心理熵</span><span style="font-size:40px;color:#4FA3F1;">→</span>
+    </div>
+    <div class="marqInner" data-m2 style="top:220px;flex-direction:row-reverse;">
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">焦虑</span><span style="font-size:40px;color:#FF6B6B;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">拖延</span><span style="font-size:40px;color:#FF6B6B;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">内耗</span><span style="font-size:40px;color:#FF6B6B;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">决策疲劳</span><span style="font-size:40px;color:#FF6B6B;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">焦虑</span><span style="font-size:40px;color:#FF6B6B;">→</span>
+    </div>
+    <div class="marqInner" data-m3 style="left:0;top:380px;">
+      <span style="font-size:52px;font-weight:900;color:#6BCB77;">心流=负熵</span><span style="font-size:40px;color:#6BCB77;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">DMN</span><span style="font-size:40px;color:#6BCB77;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">反熵四律</span><span style="font-size:40px;color:#6BCB77;">→</span>
+      <span style="font-size:52px;font-weight:900;color:rgba(245,246,250,.9);">运动·冥想·写作</span><span style="font-size:40px;color:#6BCB77;">→</span>
+      <span style="font-size:52px;font-weight:900;color:#6BCB77;">心流=负熵</span><span style="font-size:40px;color:#6BCB77;">→</span>
+    </div>
+  </div>
+`,6.0,(el,t)=>{
+  const g=el.querySelector('[data-g]'); applyGlitch(g,t);
+  zoomInEl(g,t,0,.3);
+  const m1=el.querySelector('[data-m1]'), m2=el.querySelector('[data-m2]'), m3=el.querySelector('[data-m3]');
+  const w1=m1.scrollWidth/2, w2=m2.scrollWidth/2, w3=m3.scrollWidth/2;
+  m1.style.left=(-((t*230)%(w1)))+'px';
+  m2.style.left=(1920-((t*200)%(w2)))+'px';
+  m3.style.left=(-((t*260)%(w3)))+'px';
+  const fade=clamp((t-4.2)/1.5,0,1);
+  [m1,m2,m3].forEach(m=>m.style.opacity=1-fade*.0); // 保持满不透明，由场景切换收尾
+});
+
+/* ---- S37 | 130.0–137.0 | 关注引导 ---- */
+reg(`
+  <div data-particles style="position:absolute;inset:0;pointer-events:none;"></div>
+  <div style="position:absolute;top:280px;left:0;right:0;text-align:center;">
+    <div data-a style="font-size:40px;font-weight:700;color:rgba(245,246,250,.7);">每周一期 · 用硬科学拆解你的大脑</div>
+  </div>
+  <div style="position:absolute;top:420px;left:0;right:0;text-align:center;display:flex;justify-content:center;">
+    <div data-btn style="display:flex;align-items:center;gap:26px;padding:30px 70px;border-radius:999px;background:linear-gradient(90deg,#F2C94C,#FF6B6B);box-shadow:0 20px 60px rgba(242,201,76,.35);">
+      <div style="font-size:44px;font-weight:900;color:#0B0D17;">＋ 关注</div>
+      <div style="width:2px;height:52px;background:rgba(11,13,23,.25);"></div>
+      <div style="font-size:32px;font-weight:800;color:rgba(11,13,23,.8);">不迷路</div>
+    </div>
+  </div>
+  <div data-rows style="position:absolute;top:640px;left:0;right:0;display:flex;justify-content:center;gap:30px;">
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#6BCB77;"></span>已更新：心理熵</div>
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#F2C94C;"></span>下期：心流</div>
+    <div class="chip" style="font-size:26px;"><span class="cd" style="background:#4FA3F1;"></span>备选：多巴胺 · 依恋 · 拖延</div>
+  </div>
+`,7.0,(el,t)=>{
+  if(!el._pts){ el._pts=seedParticles(el.querySelector('[data-particles]'),24,{seed:11,colors:['rgba(242,201,76,.55)','rgba(255,107,107,.45)','rgba(79,163,241,.45)'],minR:3,maxR:8}); }
+  brownian(el._pts,t,.8,11);
+  popIn(el.querySelector('[data-a]'),t,0,.24);
+  const b=el.querySelector('[data-btn]');
+  const p=IN(t,.5,.3); b.style.opacity=p;
+  const pulse=1+.035*Math.sin(t*4.2);
+  b.style.transform=`scale(${(p*pulse).toFixed(4)})`;
+  el.querySelectorAll('[data-rows] .chip').forEach((c,i)=>popIn(c,t,1.6+i*.25,.22));
+});
+
+/* ---- S38 | 137.0–147.0 | 片尾 ---- */
+reg(`
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+    <div data-logo class="endLogo">
+      <div class="ring"></div>
+      <div>
+        <div style="font-size:64px;font-weight:900;" data-t1>心理熵</div>
+        <div class="enTag" data-t2 style="font-size:30px;margin-top:8px;">Psychic Entropy · Ep.01</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;top:820px;left:0;right:0;text-align:center;">
+    <div data-cr style="font-size:26px;color:rgba(245,246,250,.4);">内容基于 Csikszentmihalyi 的意识研究与积极心理学文献</div>
+  </div>
+`,10.0,(el,t)=>{
+  const l=el.querySelector('[data-logo]');
+  const p=eo(LIN(t,.8,.2)); l.style.opacity=p; l.style.transform=`scale(${lerp(.8,1,p)})`;
+  const fadeOut=clamp((t-7.5)/2.0,0,1); // 最后 2.5s 渐隐
+  el.style.opacity=1-fadeOut;
+});
+
+/* ================= 全局驱动器 ================= */
+const TOTAL=147;
+let _acc=0; SCENES.forEach(s=>{ s.t0=_acc; _acc+=s.dur; });
+const TOTAL_SCENES=_acc;
+
+window.seek=function(time){
+  time=clamp(time,0,TOTAL);
+  let cur=SCENES[0], curT=0, acc=0, activeIdx=0;
+  for(let i=0;i<SCENES.length;i++){
+    if(time>=acc && time<acc+SCENES[i].dur){ cur=SCENES[i]; curT=time-acc; activeIdx=i; break; }
+    acc+=SCENES[i].dur;
+    if(i===SCENES.length-1){ cur=SCENES[i]; curT=SCENES[i].dur; activeIdx=i; }
+  }
+  SCENES.forEach((s,i)=>{ s.el.classList.toggle('on', i===activeIdx); });
+  cur.render(cur.el,curT);
+  /* 进度条 */
+  const pct=time/TOTAL;
+  $('#progressFill').style.width=(pct*100)+'%';
+  $('#pctNum').textContent=Math.floor(pct*100);
+  /* 底部进度条在片尾渐隐 */
+  const endFade=clamp((time-136)/2,0,1);
+  $('#progressWrap').style.opacity=1-endFade*.9;
+  $('#progressPct').style.opacity=1-endFade;
+};
+window.TOTAL_DURATION=TOTAL;
+window.SCENE_COUNT=SCENES.length;
+window.SCENE_TIMES=SCENES.map(s=>+s.t0.toFixed(4));
+window.SCENE_DYNAMIC=SCENES.map(s=>!!s.el.querySelector('[data-particles]'));
+console.log('Registered scenes:',SCENES.length,'total:',_acc.toFixed(2),'s');
+</script>
+</body>
+</html>

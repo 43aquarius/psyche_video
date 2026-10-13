@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>心理熵 · 封面（竖屏 + 横屏）</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; font-family:'Noto Sans SC','Source Han Sans SC',sans-serif; color:#F5F6FA; -webkit-font-smoothing:antialiased; }
+
+  /* ================= 竖屏 1080x1920 ================= */
+  #v { position:relative; width:1080px; height:1920px; background:#0B0D17; overflow:hidden; }
+  #v .grid { position:absolute; inset:0; opacity:.05;
+    background-image:linear-gradient(#4FA3F1 1px,transparent 1px),linear-gradient(90deg,#4FA3F1 1px,transparent 1px);
+    background-size:110px 110px; }
+  #v .glow { position:absolute; inset:0;
+    background:radial-gradient(ellipse 800px 900px at 50% 30%,rgba(79,163,241,.12),transparent 60%),
+               radial-gradient(ellipse 600px 500px at 80% 90%,rgba(242,201,76,.08),transparent 60%); }
+  #v .vig { position:absolute; inset:0; background:radial-gradient(ellipse at center,transparent 52%,rgba(0,0,0,.5) 100%); }
+  #v .noise { position:absolute; inset:0; opacity:.04; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  #v .topTags { position:absolute; top:110px; left:0; right:0; display:flex; justify-content:center; gap:22px; }
+  #v .tag { padding:14px 34px; border-radius:999px; font-size:30px; font-weight:800; letter-spacing:.12em;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.16); }
+  #v .tag.a { color:#F2C94C; border-color:rgba(242,201,76,.5); }
+  #v .tag.b { color:#4FA3F1; border-color:rgba(79,163,241,.5); }
+
+  #v .hook { position:absolute; top:230px; left:0; right:0; text-align:center; font-size:46px; font-weight:700;
+    color:rgba(245,246,250,.85); letter-spacing:.06em; }
+  #v .hook em { font-style:normal; color:#FF6B6B; }
+
+  #v .bigTitle { position:absolute; top:360px; left:0; right:0; text-align:center;
+    font-size:330px; font-weight:900; line-height:1; letter-spacing:.02em; color:#fff;
+    text-shadow:12px 6px 0 rgba(255,70,85,.9), -12px -6px 0 rgba(79,163,241,.9), 0 0 60px rgba(79,163,241,.28); }
+  #v .enSub { position:absolute; top:760px; left:0; right:0; text-align:center;
+    font-family:Georgia,'Times New Roman',serif; font-style:italic; font-size:52px; color:#4FA3F1; letter-spacing:.16em; }
+
+  #v .barZone { position:absolute; top:900px; left:120px; right:120px; }
+  #v .barLabel { display:flex; justify-content:space-between; font-size:30px; font-weight:800; margin-bottom:20px; }
+  #v .barLabel .l { color:rgba(245,246,250,.75); }
+  #v .barLabel .r { color:#FF6B6B; }
+  #v .barTrack { height:34px; border-radius:999px; background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14); overflow:hidden; position:relative; }
+  #v .barFill { position:absolute; left:0; top:0; bottom:0; width:96%;
+    background:linear-gradient(90deg,#6BCB77 0%,#F2C94C 55%,#FF6B6B 100%); box-shadow:0 0 30px rgba(242,201,76,.5); }
+  #v .barScale { display:flex; justify-content:space-between; font-size:22px; color:rgba(245,246,250,.35);
+    margin-top:14px; padding:0 6px; }
+
+  #v .phone { position:absolute; left:50%; transform:translateX(-50%); top:1090px; width:560px; height:560px;
+    background:#111420; border:3px solid rgba(255,255,255,.16); border-radius:44px;
+    box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 1px rgba(79,163,241,.08); overflow:hidden; }
+  #v .phone .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:200px; height:24px;
+    background:#0B0D17; border-radius:0 0 16px 16px; }
+  #v .phone .sb { height:56px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 34px 6px;
+    font-size:22px; color:rgba(255,255,255,.55); font-weight:600; }
+  #v .phone .at { padding:18px 36px 12px; font-size:36px; font-weight:800; }
+  #v .todo { display:flex; align-items:center; gap:18px; margin:0 30px 16px; height:64px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:16px;
+    padding:0 24px; font-size:28px; font-weight:600; color:rgba(245,246,250,.85); }
+  #v .todo .cb { width:30px; height:30px; border-radius:9px; border:2.5px solid rgba(255,255,255,.35); flex:none; }
+
+  #v .note { position:absolute; padding:22px 30px; font-weight:800; border-radius:10px;
+    box-shadow:0 18px 40px rgba(0,0,0,.5); }
+  #v .n1 { right:60px; top:1180px; font-size:30px; background:#FF6B6B; color:#fff; transform:rotate(4deg); }
+  #v .n2 { left:56px; top:1330px; font-size:28px; background:#F2C94C; color:#0B0D17; transform:rotate(-5deg); }
+  #v .n3 { right:44px; top:1480px; font-size:28px; background:#4FA3F1; color:#fff; transform:rotate(3deg); }
+
+  #v .question { position:absolute; left:0; right:0; bottom:230px; text-align:center; font-size:56px; font-weight:900; }
+  #v .question em { font-style:normal; color:#F2C94C; }
+  #v .hash { position:absolute; left:0; right:0; bottom:130px; text-align:center; font-size:34px; font-weight:700;
+    color:rgba(245,246,250,.55); letter-spacing:.05em; }
+  #v .hash b { color:#4FA3F1; font-weight:700; }
+
+  /* ================= 横屏 1920x1080 ================= */
+  #h { position:relative; width:1920px; height:1080px; background:#0B0D17; overflow:hidden; display:none; }
+  body.h #h { display:block; } body.h #v { display:none; }
+  #h .grid { position:absolute; inset:0; opacity:.05;
+    background-image:linear-gradient(#4FA3F1 1px,transparent 1px),linear-gradient(90deg,#4FA3F1 1px,transparent 1px);
+    background-size:110px 110px; }
+  #h .glow { position:absolute; inset:0;
+    background:radial-gradient(ellipse 900px 700px at 30% 40%,rgba(79,163,241,.12),transparent 60%),
+               radial-gradient(ellipse 700px 500px at 85% 80%,rgba(242,201,76,.08),transparent 60%); }
+  #h .vig { position:absolute; inset:0; background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5) 100%); }
+  #h .noise { position:absolute; inset:0; opacity:.04; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  #h .left { position:absolute; left:130px; top:0; bottom:0; width:900px; }
+  #h .topTags { position:absolute; top:100px; display:flex; gap:20px; }
+  #h .tag { padding:12px 30px; border-radius:999px; font-size:28px; font-weight:800; letter-spacing:.12em;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.16); }
+  #h .tag.a { color:#F2C94C; border-color:rgba(242,201,76,.5); }
+  #h .tag.b { color:#4FA3F1; border-color:rgba(79,163,241,.5); }
+  #h .hook { position:absolute; top:200px; font-size:44px; font-weight:700; color:rgba(245,246,250,.85); }
+  #h .hook em { font-style:normal; color:#FF6B6B; }
+  #h .bigTitle { position:absolute; top:290px; font-size:230px; font-weight:900; line-height:1; color:#fff;
+    text-shadow:9px 5px 0 rgba(255,70,85,.9), -9px -5px 0 rgba(79,163,241,.9), 0 0 50px rgba(79,163,241,.28); }
+  #h .enSub { position:absolute; top:560px; font-family:Georgia,serif; font-style:italic; font-size:42px;
+    color:#4FA3F1; letter-spacing:.16em; }
+  #h .barZone { position:absolute; top:680px; left:0; right:60px; }
+  #h .barLabel { display:flex; justify-content:space-between; font-size:27px; font-weight:800; margin-bottom:16px; }
+  #h .barLabel .l { color:rgba(245,246,250,.75); }
+  #h .barLabel .r { color:#FF6B6B; }
+  #h .barTrack { height:30px; border-radius:999px; background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14); overflow:hidden; position:relative; }
+  #h .barFill { position:absolute; left:0; top:0; bottom:0; width:96%;
+    background:linear-gradient(90deg,#6BCB77 0%,#F2C94C 55%,#FF6B6B 100%); box-shadow:0 0 26px rgba(242,201,76,.5); }
+  #h .question { position:absolute; top:810px; font-size:50px; font-weight:900; }
+  #h .question em { font-style:normal; color:#F2C94C; }
+  #h .hash { position:absolute; top:920px; font-size:32px; font-weight:700; color:rgba(245,246,250,.55); }
+  #h .hash b { color:#4FA3F1; }
+
+  #h .phone { position:absolute; left:1330px; top:180px; width:440px; height:640px;
+    background:#111420; border:3px solid rgba(255,255,255,.16); border-radius:40px;
+    box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 1px rgba(79,163,241,.08); overflow:hidden; }
+  #h .phone .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:170px; height:22px;
+    background:#0B0D17; border-radius:0 0 14px 14px; }
+  #h .phone .sb { height:52px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 28px 6px;
+    font-size:19px; color:rgba(255,255,255,.55); font-weight:600; }
+  #h .phone .at { padding:14px 30px 10px; font-size:30px; font-weight:800; }
+  #h .todo { display:flex; align-items:center; gap:16px; margin:0 24px 13px; height:56px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:14px;
+    padding:0 20px; font-size:24px; font-weight:600; color:rgba(245,246,250,.85); }
+  #h .todo .cb { width:26px; height:26px; border-radius:8px; border:2.5px solid rgba(255,255,255,.35); flex:none; }
+
+  #h .note { position:absolute; padding:20px 26px; font-weight:800; border-radius:10px;
+    box-shadow:0 16px 36px rgba(0,0,0,.5); }
+  #h .n1 { left:1120px; top:222px; font-size:27px; background:#FF6B6B; color:#fff; transform:rotate(5deg); }
+  #h .n2 { left:1800px; top:430px; font-size:25px; background:#F2C94C; color:#0B0D17; transform:rotate(-6deg); }
+  #h .n3 { left:1150px; top:742px; font-size:25px; background:#4FA3F1; color:#fff; transform:rotate(4deg); }
+</style>
+</head>
+<body>
+
+<div id="v">
+  <div class="grid"></div><div class="glow"></div>
+  <div class="topTags">
+    <div class="tag a">心理学科普</div>
+    <div class="tag b">147 秒讲透</div>
+  </div>
+  <div class="hook">精神内耗，其实是<em>意识的熵增</em></div>
+  <div class="bigTitle">心理熵</div>
+  <div class="enSub">Psychic Entropy</div>
+  <div class="barZone">
+    <div class="barLabel"><span class="l">今日心理熵水平</span><span class="r">96% 高危</span></div>
+    <div class="barTrack"><div class="barFill"></div></div>
+    <div class="barScale"><span>有序 0%</span><span>50%</span><span>100% 失序</span></div>
+  </div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="sb"><span>23:47</span><span>⁙ 5G 87%</span></div>
+    <div class="at">今 日 待 办</div>
+    <div class="todo"><div class="cb"></div><span>写年终总结</span></div>
+    <div class="todo"><div class="cb"></div><span>回复 12 封邮件</span></div>
+    <div class="todo"><div class="cb"></div><span>健身 45 分钟</span></div>
+    <div class="todo"><div class="cb"></div><span>学英语</span></div>
+    <div class="todo"><div class="cb"></div><span>读书 30 页</span></div>
+    <div class="todo"><div class="cb"></div><span>整理房间</span></div>
+  </div>
+  <div class="note n1">又在拖延？</div>
+  <div class="note n2">念头打架</div>
+  <div class="note n3">越躺越乱</div>
+  <div class="question">你的大脑，为什么<em>越来越乱</em>？</div>
+  <div class="hash"><b>#心理熵</b>　<b>#精神内耗</b>　<b>#心流</b></div>
+  <div class="vig"></div><div class="noise"></div>
+</div>
+
+<div id="h">
+  <div class="grid"></div><div class="glow"></div>
+  <div class="left">
+    <div class="topTags">
+      <div class="tag a">心理学科普</div>
+      <div class="tag b">147 秒讲透</div>
+    </div>
+    <div class="hook">精神内耗，其实是<em>意识的熵增</em></div>
+    <div class="bigTitle">心理熵</div>
+    <div class="enSub">Psychic Entropy</div>
+    <div class="barZone">
+      <div class="barLabel"><span class="l">今日心理熵水平</span><span class="r">96% 高危</span></div>
+      <div class="barTrack"><div class="barFill"></div></div>
+    </div>
+    <div class="question">你的大脑，为什么<em>越来越乱</em>？</div>
+    <div class="hash"><b>#心理熵</b>　<b>#精神内耗</b>　<b>#心流</b></div>
+  </div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="sb"><span>23:47</span><span>⁙ 5G 87%</span></div>
+    <div class="at">今 日 待 办</div>
+    <div class="todo"><div class="cb"></div><span>写年终总结</span></div>
+    <div class="todo"><div class="cb"></div><span>回复 12 封邮件</span></div>
+    <div class="todo"><div class="cb"></div><span>健身 45 分钟</span></div>
+    <div class="todo"><div class="cb"></div><span>学英语</span></div>
+    <div class="todo"><div class="cb"></div><span>读书 30 页</span></div>
+    <div class="todo"><div class="cb"></div><span>整理房间</span></div>
+  </div>
+  <div class="note n1">又在拖延？</div>
+  <div class="note n2">念头打架</div>
+  <div class="note n3">越躺越乱</div>
+  <div class="vig"></div><div class="noise"></div>
+</div>
+
+<script>
+  if (location.search.includes('mode=h')) document.body.classList.add('h');
+</script>
+</body>
+</html>
